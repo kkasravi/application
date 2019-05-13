@@ -1,17 +1,23 @@
 # Build the manager binary
-FROM golang:1.10.3 as builder
+ARG GOLANG_VERSION=1.12.4
+FROM golang:${GOLANG_VERSION} as builder
+
+RUN go get github.com/derekparker/delve/cmd/dlv
 
 # Copy in the go src
 WORKDIR /go/src/github.com/kubernetes-sigs/application
 COPY pkg/    pkg/
 COPY cmd/    cmd/
-COPY vendor/ vendor/
+COPY go.mod .
 
+ENV GO111MODULE=on
+
+RUN go mod download
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager github.com/kubernetes-sigs/application/cmd/manager
+RUN go build -gcflags 'all=-N -l' -o manager cmd/manager/main.go
 
 # Copy the controller-manager into a thin image
 FROM ubuntu:latest
-WORKDIR /root/
+WORKDIR /
 COPY --from=builder /go/src/github.com/kubernetes-sigs/application/manager .
-ENTRYPOINT ["./manager"]
+ENTRYPOINT ["/manager"]
