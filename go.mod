@@ -1,4 +1,4 @@
-module sigs.k8s.io/application
+module github.com/kkasravi/application
 
 go 1.12
 
